@@ -28,8 +28,8 @@ void StartServer()
 int main ()
 {
   std::thread th2(StartServer);
-  std::thread th1(LoadData,
-  "/home/user/CLionProjects/lab-07-http-server/data/suggestions.json");
+  Server::jsonPath = "/home/user/CLionProjects/lab-07-http-server/data/suggestions.json";
+  std::thread th1(LoadData, Server::jsonPath);
   std::cout << "Server is running!" << std::endl;
   th1.join();
   th2.join();

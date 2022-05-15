@@ -1,6 +1,8 @@
 //Copyright 2022 wm8
+#include <fstream>
 #include "Server.h"
 bool Server::isRunning;
+std::string Server::jsonPath;
 json* Server::data;
 
 void Server::NotFound(struct evhttp_request *request,
@@ -20,7 +22,8 @@ void SendJSON(struct evhttp_request *req, json& response)
   evbuffer_free(buffer);
 }
 
-void Server::Suggest(struct evhttp_request *req,[[maybe_unused]] void *params) {
+void Server::Suggest(struct evhttp_request *req,
+                     [[maybe_unused]] void *params) {
   json response;
   if (data == nullptr) {
     response["error"] = "data is not initialized!";
@@ -42,6 +45,7 @@ void Server::Suggest(struct evhttp_request *req,[[maybe_unused]] void *params) {
       str = static_cast<char *>(malloc(len + 1));
       evbuffer_copyout(postBuf, str, len);
       str[len] = '\0';
+      std::cout << "request data: " << str << std::endl;
       postJSON = json::parse(str);
     }
     if (!postJSON.contains("input")) {
@@ -64,6 +68,9 @@ void Server::Suggest(struct evhttp_request *req,[[maybe_unused]] void *params) {
         return a.first < b.first;
       }
     } customLess;
+    if(words.empty())
+      SaveWord(word);
+
     std::sort(words.begin(), words.end(), customLess);
     int i = 0;
     for (auto &_p : words) {
@@ -82,6 +89,7 @@ void Server::Suggest(struct evhttp_request *req,[[maybe_unused]] void *params) {
 
 Server::Server(const char *address, const int port)
 {
+
   isRunning = true;
   struct event_base *ebase;
   struct evhttp *server;
@@ -97,4 +105,14 @@ Server::Server(const char *address, const int port)
   event_base_dispatch(ebase);
   evhttp_free (server);
   event_base_free (ebase);
+}
+void Server::SaveWord(std::string word)
+{
+  json elm;
+  elm["id"] = word;
+  elm["name"] = word;
+  elm["cost"] = 10;
+  Server::data->push_back(elm);
+  std::ofstream file(jsonPath);
+  file << *data;
 }
